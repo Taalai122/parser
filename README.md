@@ -1,0 +1,1 @@
+Firstly clone entire project
