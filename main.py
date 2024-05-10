@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup as BS
+import openpyxl
+
 
 def get_html(url):
     response = requests.get(url)
@@ -27,35 +29,72 @@ def get_links(html):
 
 def get_posts(html):
     soup = BS(html,'html.parser')
-    title = soup.find('div', class_='flex-1')
-    price = title.find('span', class_='text-title_3').text.replace('EGP', '').strip()+ ' EGP'
-    name = title.find('h3', class_="text-gray__dark_2 text-body_1").text.strip()
-    param = soup.find('div',class_="flex flex-col gap-y-x")
-    address = param.find('p',class_="text-gray__dark_2 whitespace-nowrap truncate text-body_2").text.strip()
-    area = param.find('p',class_='text-gray__dark_2 whitespace-nowrap truncate text-body_1').text.strip()
-    listing_details = soup.find('section', class_='flex flex-col gap-x w-full container-fluid')
-    floor = listing_details.find('span',class_='flex-[70%] xl:flex-[70%] lg:flex-[65%] text-start text-gray__dark_2 text-body_1').text.strip()
+    title = soup.find('div', class_ = 'flex-1')
+    price = title.find('span', class_ = 'text-title_3').text.replace('EGP','').strip()+' EGP'
+    name = title.find('h3', class_ = 'text-gray__dark_2 text-body_1').text.strip()
+    print(name)
+    param = soup.find('div', class_ = 'flex flex-col gap-y-x')
+    address = param.find('p', class_ = 'text-gray__dark_2 whitespace-nowrap truncate text-body_2').text.strip()
+    area = param.find('p', class_ = 'text-gray__dark_2 whitespace-nowrap truncate text-body_1').text.strip()
+    listing_details = soup.find('section', class_ = 'flex flex-col gap-x w-full container-fluid')
+    details = listing_details.find_all('div', class_ = 'group flex px-1.5x py-2x')
+
     
-    # to do
-    # view = 
-    # year_built =
-    # listing_id =
-    # Price_per_meter =  
 
-    listing_description = soup.find('section', class_='gap-y-3x container-fluid grid grid-cols-12')
-    descrip = listing_description.find('div',class_='col-span-9 flex flex-col gap-x').text.strip()
+    for i in details:
+        key = i.find('h4',class_='flex-[30%] xl:flex-[30%] lg:flex-[35%] whitespace-nowrap text-gray__dark_1 text-body_2')
+        value = i.find('span',class_ = 'flex-[70%] xl:flex-[70%] lg:flex-[65%] text-start text-gray__dark_2 text-body_1')
+        # info.update({key.text.strip(): value.text.strip()})
+    
+        
+    listing_descriptions = soup.find('section',class_ ='gap-y-3x container-fluid grid grid-cols-12' )
+    description = listing_descriptions.find('span').text.strip()
+        # print(f' floor: {i.text}''\n', f'view: {i.text}''\n', f'year built: {i.text}''\n', f'price per meter: {i.text}''\n', f'listing ID: {i.text}')
+    data  = {
+        'title' :name,
+        'price' :price,
+        'address' :address,
+        'area':area,
+        'description' :description,
+        
+    }
+    return data
 
-    print(descrip)
+def save_to_xls(data):
+    wb = openpyxl.Workbook()
+    sheet = wb.active
+    sheet['A1'] = 'Title'
+    sheet['B1'] = 'Price'
+    sheet['C1'] = 'Address'
+    sheet['D1'] = 'Area'
+    sheet['E1'] = 'Description'
+    sheet['F1'] = 'Info'
+
+    for i,item in enumerate(data,4):
+        sheet[f'A{i}'] = item['title']
+        sheet[f'B{i}'] = item['price']
+        sheet[f'C{i}'] = item['address']
+        sheet[f'D{i}'] = item['area']
+        sheet[f'E{i}'] = item['description']
+        # sheet[f'F{i}'] = item['info']
+
+    wb.save('data1.xlsx')
 
 def main():
     URL = 'https://aqarmap.com.eg/en/for-sale/property-type/cairo/new-cairo/'
     html = get_html(URL)
-    get_links(html)
-    links = get_links(html)
-    for link in links:
-        detail_html = get_html(url=link)
-        data = get_posts(html=detail_html)
+    data = []
 
+    for i in range(1, 3):
+        page_url = URL + f'?page={i}'
+        html = get_html(page_url)
+        links = get_links(html)
+        for link in links:
+            detail_html = get_html(url=link)
+            get_posts(html=detail_html)
+            data.append(get_posts(html=detail_html))
+
+    save_to_xls(data=data)
 
     
 if __name__ == '__main__':
